@@ -13,12 +13,24 @@
  */
  
 class mailtolist extends phplistPlugin {
-  var $name = "Mail To List";
-  var $coderoot = "plugins/mailtolist/";
 
-  function adminmenu() {
-    return array(
+    public $name = "Mail To List";
+    public $coderoot = "mailtolist/";
+
+    function mailtolist() {
+        parent::phplistplugin();
+    }
+
+    public $pageTitles = array(
+        'main' => 'Plugin MailToList',
     );
-  }
+    public $topMenuLinks = array(
+        'main' => array('category' => 'config'),
+    );
+
+    function adminmenu() {
+        return array(
+        );
+    }
 }
 ?>
