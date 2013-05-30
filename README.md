@@ -34,6 +34,6 @@ Installation
 References
 ==========
 
-[1] http://docs.phplist.com/MailToList.html
-[2] http://resources.phplist.com/develop/plugins
-[3] http://www.sawey.be/downloads/mail2listv2_0_0b.tar.gz
+- [1] http://docs.phplist.com/MailToList.html
+- [2] http://resources.phplist.com/develop/plugins
+- [3] http://www.sawey.be/downloads/mail2listv2_0_0b.tar.gz
