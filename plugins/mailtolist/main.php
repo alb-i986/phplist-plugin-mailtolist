@@ -112,7 +112,7 @@ function configure(){
 ##     PROCESS()       ##
 #########################
 function process(){
-	include($GLOBALS[coderoot] . "plugins/mailtolist/get_email.class.php");
+	include( dirname(__FILE__) . '/get_email.class.php' );
 	
 	$full_page = "";
 	
