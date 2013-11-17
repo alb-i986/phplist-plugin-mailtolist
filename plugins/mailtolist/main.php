@@ -13,6 +13,8 @@
  */
 
 
+if (!defined('PHPLISTINIT')) die(); ## avoid pages being loaded directly
+
 
 $action = $_POST['action'];
 
