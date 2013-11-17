@@ -37,4 +37,4 @@ class mailtolist extends phplistPlugin {
         );
     }
 }
-?>
+

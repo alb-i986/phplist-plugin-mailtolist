@@ -485,19 +485,9 @@ function import_users(){
 	
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-print("<br /><br /><br /><br /><br /><h6>Email To List By SaWey &copy; 2007</h6>");
 ?>
+
+
+
+<br /><br /><br /><br /><br /><h6>Email To List By SaWey &copy; 2007</h6>
+
