@@ -17,6 +17,9 @@ class mailtolist extends phplistPlugin {
 
     public $name = "Mail To List";
     public $coderoot = "mailtolist/";
+    public $version = "2.0.1";
+    public $authors = "SaWey, Alberto Scotto";
+    public $description = "Enables you to send messages to your lists via your favorite email client. When installed, you can, for example, send emails to 'mailinglist@yourdomain.com' and when you process the messages in the admin section, they will be sent to your mailinglist users.";
 
     function mailtolist() {
         parent::phplistplugin();
