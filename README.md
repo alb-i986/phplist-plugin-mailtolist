@@ -16,7 +16,7 @@ Changes
 -------
 
 Following the guidelines in [2], I have adapted the mailtolist v2 plugin [3] to work with the latest version of phpList.
-It is now possible to initialize and use the plugin from the admin web interface of phpList.
+It is now possible to initialize and use the plugin from phpList's admin web interface.
 
 Files modified:
  - mailtolist.php
@@ -26,7 +26,7 @@ Installation
 ------------
 
 1. Clone this repo
-2. Copy everything under mail2listv2/ to $PLUGIN_ROOTDIR
+2. Copy plugins/* to $PLUGIN_ROOTDIR (or add /path/to/phplist-plugin-mailtolist/plugins to $PLUGIN_ROOTDIR)
 3. Edit mailtolist/get_email.class.php and set the parameters $attach_url and $file_path
 4. Open your favourite browser and go to http://$HOST/lists/admin/?pi=mailtolist&page=main or select from the menu "Config", "Mail2list Plugin"
 5. Configure mailtolist (see [1])
