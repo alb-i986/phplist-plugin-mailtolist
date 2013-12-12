@@ -123,9 +123,9 @@ function process(){
 	$page2 .= "<a href='./?page=processqueue'>Click to process queue</a>";
 
 	$full_page .= $page;
-	//get available lists
+	//get available lists where queue is not disabled
 	$accounts = Sql_Num_Rows($GLOBALS[table_prefix]."mail2list_popaccounts");
-	$sql = Sql_Query("SELECT * FROM ". $GLOBALS[table_prefix]."mail2list_popaccounts");
+	$sql = Sql_Query("SELECT * FROM ". $GLOBALS[table_prefix]."mail2list_popaccounts WHERE queue!='no'");
 	$i = 0;
 	while ($row = Sql_Fetch_Array($sql)) {
 	  $popaccounts[$i] = $row;
