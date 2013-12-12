@@ -528,7 +528,7 @@
 		function db_add_attach($file_orig, $filename, $filesize, $filetype){
 			$sql = "INSERT INTO "  . $GLOBALS['table_prefix'] . "attachment (filename, remotefile, size, mimetype) VALUES
 				('".addslashes($filename)."',
-				 '".addslashes($filename)."',
+				 '".addslashes($file_orig)."',
 				 '".$filesize."',
 				 '".$filetype."')";
 			Sql_Query($sql);
@@ -589,7 +589,7 @@
 			$decoded = $this->partsarray[$i][attachment][filename];
 			$decoded = $this->mimie_text_decode($decoded);
 			$decoded = preg_replace('/[^a-z0-9_\-\.]/i', '_', $decoded);
-			$decoded = $this->attach_url . $this->dir_name() . $this->newid . $decoded;
+			$decoded = $this->attach_url . $this->dir_name() . $this->newid . $decoded;			
 			return $decoded;
 		}//[end function]
 		  
