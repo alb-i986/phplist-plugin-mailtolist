@@ -357,8 +357,8 @@
 				}//[end if]
 		
 				$email['CHARSET']    = $charset;
-				$email['SUBJECT']    = $this->mimie_text_decode($header->Subject);
-				$email['FROM_NAME']  = $this->mimie_text_decode($fromname);
+				$email['SUBJECT']    = $this->mimie_text_decode_nohtml($header->Subject);
+				$email['FROM_NAME']  = $this->mimie_text_decode_nohtml($fromname);
 				$email['FROM_EMAIL'] = $fromaddress;
 				$email['TO_EMAIL']   = $toaddress;
 				$email['DATE']       = date("Y-m-d H:i:s",strtotime($header->date));
@@ -384,6 +384,28 @@
 		
 		  }//[end function]
 		
+		function mimie_text_decode_nohtml($string){
+		
+			$string = chop($string);
+		
+			$elements = imap_mime_header_decode($string);
+			if(is_array($elements)){
+				for ($i=0; $i<count($elements); $i++) {
+					$charset = $elements[$i]->charset;
+					$txt .= $elements[$i]->text;
+				}//[end for]
+			} else {
+				$txt = $string;
+			}//[end if]
+			if($txt == ''){
+				$txt = 'No_name';
+			}//[end if]
+			if($charset == 'us-ascii'){
+				//$txt = $this->charset_decode_us_ascii ($txt);
+			}//[end if]
+			return $txt;
+		}//[end function]
+        
 		function mimie_text_decode($string){
 		
 			$string = htmlspecialchars(chop($string));
