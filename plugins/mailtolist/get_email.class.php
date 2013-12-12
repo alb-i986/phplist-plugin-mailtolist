@@ -497,16 +497,16 @@
 			}//[end if]
 			
 			$sql = "INSERT INTO "  . $GLOBALS['table_prefix'] . "message (subject, fromfield, footer, entered, embargo, status,htmlformatted, sendformat, template, owner) VALUES
-				  ('".addslashes($email['SUBJECT'])."',
-				  '".$email['FROM_NAME'] . " " . $email['FROM_EMAIL']."',
-				  '". htmlentities(getConfig("messagefooter"))."',
-				  '".$email['DATE']."',
-				  '".$email['DATE']."',
-				  '" . $message_state . "',
+				  ('". sql_escape($email['SUBJECT'])."',
+				  '". sql_escape($email['FROM_NAME'] . " " . $email['FROM_EMAIL'])."',
+				  '". sql_escape(getConfig("messagefooter"))."',
+				  '".sql_escape($email['DATE'])."',
+				  '".sql_escape($email['DATE'])."',
+				  '" . sql_escape($message_state) . "',
 				  '1',
-				  '".$this->sendformat."',
-				  '".$phplist_template."',
-				  '".$phplist_listowner."')";
+				  '".sql_escape($this->sendformat)."',
+				  '". sql_escape($phplist_template) ."',
+				  '".sql_escape($phplist_listowner)."')";
 			Sql_Query($sql);
 		
 			$execute = Sql_Query("select LAST_INSERT_ID() as UID");
@@ -515,9 +515,9 @@
 		
 			//add to tableprefix_listmessage
 			$sql = "INSERT INTO "  . $GLOBALS['table_prefix'] . "listmessage (messageid, listid, entered) VALUES
-					('".$this->newid."',
-					'".$phplist_listid."',
-					'".$email['DATE']."')";
+					('".sql_escape($this->newid)."',
+					'".sql_escape($phplist_listid)."',
+					'".sql_escape($email['DATE'])."')";
 			Sql_Query($sql);
 		}//[end function]
 		  
