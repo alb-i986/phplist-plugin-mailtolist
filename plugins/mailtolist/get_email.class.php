@@ -26,8 +26,13 @@
 		###################################################################################################################
 		###################################################################################################################
 		##     Edit the URL to your phplist attachment directory (http://www.yourdomain.com/mailinglist/attachments/)    ##
+		##     It is not safe to use place attachments directly under web server.										 ##
+		##     Instead we will use a script similer to dl.php used in phplist.											 ##
+		##	   Infact dl_mailtolist.php is a copy of dl.php with some minor changes.                                     ##
+		##     Ideally dl_mailtolist.php must be placed in the same place as dl.php                                      ##
+		##     Please read the comments in dl_mailtolist.php                                                             ##
 		###################################################################################################################
-		 var $attach_url = "http://www.yourdomain.com/mailinglist/attachments/";
+		 var $attach_url = "http://www.yourdomain.com/mailinglist/dl_mailtolist.php";
 		###################################################################################################################
 		##	   Edit the path to your phplist attachment directory (/var/www/mailinglist/attachments/)                    ##
 		###################################################################################################################
@@ -596,7 +601,9 @@
 					$decoded = $p[attachment][filename];
 					$decoded = $this->mimie_text_decode($decoded);
 					$decoded = preg_replace('/[^a-z0-9_\-\.]/i', '_', $decoded);
-					$decoded = $this->attach_url . $this->dir_name() . $this->newid . $decoded;			
+					#$decoded = $this->attach_url . $this->dir_name() . $this->newid . $decoded;	
+					$decoded = $this->attach_url . "?fid=" . urlencode($this->dir_name() . $this->newid . $decoded);
+					
 					break;
 				}
 			}
