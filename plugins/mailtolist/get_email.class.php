@@ -656,7 +656,7 @@
 		  //begin processing
 		  $bad_messages = 0;
 		  while($this->msgid <= $this->num_message()) {
-		
+				$this->partsarray = array();
 				$email = $this->email_get();
 				$mail_status_inprocess = $this->msgid;
 				$mail_status_total = $this->num_message();
