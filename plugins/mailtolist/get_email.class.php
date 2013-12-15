@@ -180,6 +180,10 @@
 		*/
 		function parsepart($p,$msgid,$i){
 			$part=imap_fetchbody($this->link,$msgid,$i);
+
+			$this->partsarray[$i]['ifid'] = $p->ifid;
+			$this->partsarray[$i]['id'] = $p->id;
+
 			#Multipart
 		   
 			if ($p->type!=0){
@@ -585,13 +589,20 @@
 			}//[end if]
 		}//[end function]
 		
-		function getImageUrl($i){
-			$decoded = $this->partsarray[$i][attachment][filename];
-			$decoded = $this->mimie_text_decode($decoded);
-			$decoded = preg_replace('/[^a-z0-9_\-\.]/i', '_', $decoded);
-			$decoded = $this->attach_url . $this->dir_name() . $this->newid . $decoded;			
+		function getImageUrl($i,$cid){	
+			foreach($this->partsarray as $t=>$p){	
+				if ($p[id] == "<" . urldecode($cid) . ">")
+				{
+					$decoded = $p[attachment][filename];
+					$decoded = $this->mimie_text_decode($decoded);
+					$decoded = preg_replace('/[^a-z0-9_\-\.]/i', '_', $decoded);
+					$decoded = $this->attach_url . $this->dir_name() . $this->newid . $decoded;			
+					break;
+				}
+			}
 			return $decoded;
 		}//[end function]
+
 		  
 		function check_sendformat($format){
 			switch ($this->sendformat){
@@ -699,10 +710,10 @@
 						if($part['text']['type'] == 'HTML'){
 							$this->check_sendformat("HTML");
 							###################################################
-							preg_match_all('/src\=\"cid\:(.*?)\@.*?\"/i', $part['text']['string'], $cids);
+							preg_match_all('/src\=\"cid\:(.*?)"/i', $part['text']['string'], $cids);
 							$counter = count($cids[0])+2;
 							for ($i = 2; $i<$counter; $i++){
-								$part['text']['string'] = str_replace($cids[0][$i-2], "src='" . $this->getImageUrl($i) . "'", $part['text']['string']);
+								$part['text']['string'] = str_replace($cids[0][$i-2], "src='" . $this->getImageUrl($i,$cids[0][$i-2]) . "'", $part['text']['string']);
 							}//[end for]
 							#####################################################
 							$this->db_update_message($part['text']['string'], $type= 'HTML');
