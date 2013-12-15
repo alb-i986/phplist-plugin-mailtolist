@@ -15,9 +15,26 @@ See [1] for more info.
 Changes
 -------
 
+Fixed: the bug that prefix each attachment filename with message id.
+
+Fixed: the error of that copy attachments of one mail to another if they are processed at the same time.
+
+Fixed: the code to use content id instead of sequence when resolving CID of inline enbeded attachment images. 
+This fix issues that happen when there are both attachments and embeded images.
+
+New: Support granting sending permission for each mailint list seperately.
+
+New: Allow multiple whitelisted senders to post to list on behalf of a list owner without having list owners credentials.
+
 Use same machanism that phplist uses to download atachments. Using a file similer to dl.php.
 In fact the new file dl_mailtolist.php is a copy of dl.php with some tiny changes.
 If needed these changes can directly placed inside dl.php.
+
+Files Modified:
+- get_email.class.php
+- main.php
+New File
+- dl_mailtolist.php - this is a modified version of dl.php from phplist.
 
 Following the guidelines in [2], I have adapted the mailtolist v2 plugin [3] to work with the latest version of phpList.
 It is now possible to initialize and use the plugin from phpList's admin web interface.
