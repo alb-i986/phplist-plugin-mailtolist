@@ -15,18 +15,18 @@ See [1] for more info.
 Changes
 -------
 
-Fixed: the bug that prefix each attachment filename with message id.
+Fixed: the bug that prefix each attachment file name with message id.
 
 Fixed: the error of that copy attachments of one mail to another if they are processed at the same time.
 
-Fixed: the code to use content id instead of sequence when resolving CID of inline enbeded attachment images. 
-This fix issues that happen when there are both attachments and embeded images.
+Fixed: the code to use content id instead of sequence when resolving CID of inline embedded attachment images. 
+This fix issues that happen when there are both attachments and embedded images.
 
-New: Support granting sending permission for each mailint list seperately.
+New: Support granting sending permission for each mailing list separately.
 
-New: Allow multiple whitelisted senders to post to list on behalf of a list owner without having list owners credentials.
+New: Allow multiple white listed senders to post to list on behalf of a list owner without having list owners credentials.
 
-Use same machanism that phplist uses to download atachments. Using a file similer to dl.php.
+Use same mechanism that phplist uses to download attachments. Using a file similar to dl.php.
 In fact the new file dl_mailtolist.php is a copy of dl.php with some tiny changes.
 If needed these changes can directly placed inside dl.php.
 
