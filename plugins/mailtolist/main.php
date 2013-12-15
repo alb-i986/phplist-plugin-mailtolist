@@ -66,7 +66,7 @@ function main(){
 		Sql_Query($sqlallowsend);
 
 		//create tableprefix_mail2list_popaccounts
-		$sqlpop = "CREATE TABLE `".$GLOBALS[table_prefix]."mail2list_popaccounts` (`listid` INT( 10 ) NOT NULL PRIMARY KEY, `host` VARCHAR( 255 ) NOT NULL ,`port` VARCHAR( 255 ) NOT NULL ,`login` VARCHAR( 50 ) NOT NULL ,		`pass` VARCHAR( 50 ) NOT NULL, `mail_status` VARCHAR( 10 ) NOT NULL DEFAULT '0/0', `queue` VARCHAR( 3 ) NOT NULL DEFAULT 'yes', `del_message` VARCHAR( 3 ) NOT NULL DEFAULT 'yes' );";
+		$sqlpop = "CREATE TABLE `".$GLOBALS[table_prefix]."mail2list_popaccounts` (`listid` INT( 10 ) NOT NULL PRIMARY KEY, `host` VARCHAR( 255 ) NOT NULL ,`port` VARCHAR( 255 ) NOT NULL ,`login` VARCHAR( 50 ) NOT NULL ,		`pass` VARCHAR( 50 ) NOT NULL, `mail_status` VARCHAR( 10 ) NOT NULL DEFAULT '0/0', `queue` VARCHAR( 3 ) NOT NULL DEFAULT 'yes', `del_message` VARCHAR( 3 ) NOT NULL DEFAULT 'yes', `allowedsenders` TEXT NULL DEFAULT NULL );";
 		Sql_Query($sqlpop);
 
 		$page  = "<h6>Database had to be updated, please reload the page. <br />";
@@ -193,6 +193,21 @@ echo $id;
 				}
 			}
 		}
+		
+		//read permissions from user
+		$sender_list = Sql_Query(sprintf('select * from ' . $GLOBALS[table_prefix].'mail2list_allowsend'));
+		$permmatrix = array();
+		if($_POST['sender_id_any'] == 'allow')
+		{
+			$permmatrix['any'] = 1;
+		}		
+		while ($sender = Sql_Fetch_Array($sender_list)) {
+			if($_POST['sender_id_' . $sender['id']] == 'allow')
+			{
+				$permmatrix[strtolower($sender['email'])] = 1;
+			}
+		}
+		$permmatrix_encoded = sql_escape(serialize($permmatrix));		
 
 		if ($count>=1){
 		//email is already in use by another list
@@ -219,12 +234,10 @@ echo $id;
 		
 		if ($row['listid'] == ""){
 			//table doesn't exist
-			Sql_Query("INSERT INTO `" . $GLOBALS[table_prefix]."mail2list_popaccounts` (`host` , `port` , `login` , `pass`, `listid`, `queue`, `del_message` ) VALUES ('" . $_POST['pophost'] . "', '" . $_POST['popport'] . "', '" . $_POST['poplogin'] . "', '" . $_POST['poppass'] . "', '" . $id . "', '" . $_POST['queue'] . "', '" . $_POST['del_message'] . "');");
+			Sql_Query("INSERT INTO `" . $GLOBALS[table_prefix]."mail2list_popaccounts` (`host` , `port` , `login` , `pass`, `listid`, `queue`, `del_message`, allwedsenders ) VALUES ('" . $_POST['pophost'] . "', '" . $_POST['popport'] . "', '" . $_POST['poplogin'] . "', '" . $_POST['poppass'] . "', '" . $id . "', '" . $_POST['queue'] . "', '" . $_POST['del_message'] . "', '" . $permmatrix_encoded . "');"); 			
 		}else{
 			//table exists
-			Sql_Query("UPDATE `" . $GLOBALS[table_prefix]."mail2list_popaccounts` SET `host` = '" . $_POST['pophost'] . "',`port` = '" . $_POST['popport'] . "',`login` = '" . $_POST['poplogin'] . "',`pass` = '" . $_POST['poppass'] . "', `queue`='" . $_POST['queue'] . "', `del_message`='" . $_POST['del_message'] . "' WHERE `" . $GLOBALS[table_prefix]."mail2list_popaccounts`.`listid` =".$id);
-
-
+			Sql_Query("UPDATE `" . $GLOBALS[table_prefix]."mail2list_popaccounts` SET `host` = '" . $_POST['pophost'] . "',`port` = '" . $_POST['popport'] . "',`login` = '" . $_POST['poplogin'] . "',`pass` = '" . $_POST['poppass'] . "', `queue`='" . $_POST['queue'] . "', `del_message`='" . $_POST['del_message']. "', `allwedsenders`='" . $permmatrix_encoded . "' WHERE `" . $GLOBALS[table_prefix]."mail2list_popaccounts`.`listid` =".$id);
 		}
 
 		$page2 = "<h6 style='color:red'>Settings have been saved</h6>";
@@ -289,6 +302,24 @@ echo $id;
 //		$page .= "<option value='no'>No</option></td></tr>";
 //	}
 	$page .= "</table>";
+	
+	#Mermission Matrix
+	$permmatrix = array();
+	$permmatrix['any'] = 1;
+	
+	if($poprow['allwedsenders'] != "")
+	{
+		$permmatrix =  unserialize($poprow['allwedsenders']);
+	}	
+	$page .= "<hr><br>Sending Permissions<br>";
+
+	$page .= "<input type='checkbox' name='sender_id_any' value='allow'". (($permmatrix['any'])?"checked":"") .">Allow anyone in whitelist to send.(Not Recomended)<br>";
+	$sender_list = Sql_Query(sprintf('select * from ' . $GLOBALS[table_prefix].'mail2list_allowsend'));
+    while ($sender = Sql_Fetch_Array($sender_list)) {
+	  $page .= "<input type='checkbox' name='sender_id_". $sender["id"] ."' value='allow' ". (($permmatrix[strtolower($sender["email"])])?"checked":"") ."> " . htmlspecialchars($sender["email"]) . "<br>";
+    }
+	
+	
 	$page .= "<input type=hidden name='list' value='" . $id . "'><br /><br />";
 	$page .= "<input type=submit name='action' value='Apply settings'><br /><br />";
 	$page .= "<input type=submit name='action' value='Delete settings'>";

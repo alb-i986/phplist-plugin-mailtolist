@@ -664,7 +664,22 @@
 				//First we have to check some things (whitelist, mailinglist,...)
 				$req = Sql_Query("SELECT * FROM "  . $GLOBALS['table_prefix'] . "mail2list_allowsend WHERE email='".$email['FROM_EMAIL']."'");
 				$whitelistcheck = Sql_Fetch_Array($req);
-				if ($whitelistcheck['name'] == ""){
+				
+				//Load sender matrix for the list
+				$sender_matrix = array();
+				$popsql = Sql_Query("SELECT allwedsenders FROM " . $GLOBALS['table_prefix']."mail2list_popaccounts WHERE listid=".$phplist_listid);
+				$poprow = Sql_Fetch_Array($popsql);
+				$sender_allowed = false;
+				if ($poprow['allwedsenders'] != "")
+				{
+					$sender_matrix =  unserialize($poprow['allwedsenders']);
+					if($sender_matrix['any'] || $sender_matrix[strtolower($email['FROM_EMAIL'])])
+					{
+						$sender_allowed = true;
+					}
+				}
+				
+				if ($whitelistcheck['name'] == "" || !$sender_allowed){
 					//user not available, reply with error and delete message
 					$this->processed_message[$this->msgid] .= "Processed message <b>" . $mail_status_inprocess . "</b> of <b>" . $mail_status_total . "</b> with error!<br />";
 					$this->processed_message[$this->msgid]  .= "<br /><b>".$email['FROM_EMAIL']."</b> could not be found on the whitelist!<br />";
