@@ -62,7 +62,7 @@ function main(){
 		Sql_Query($sqllist);
 
 		//create tableprefix_mail2list_allowsend
-		$sqlallowsend = "CREATE TABLE `".$GLOBALS[table_prefix]."mail2list_allowsend` (`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,`email` VARCHAR( 255 ) NOT NULL ,`name` VARCHAR( 255 ) NOT NULL ,`sent` INT( 50 ) NOT NULL DEFAULT '0');";
+		$sqlallowsend = "CREATE TABLE `".$GLOBALS[table_prefix]."mail2list_allowsend` (`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,`email` VARCHAR( 255 ) NOT NULL ,`name` VARCHAR( 255 ) NOT NULL ,`sent` INT( 50 ) NOT NULL DEFAULT '0', `aliasemail` VARCHAR( 255 ));";
 		Sql_Query($sqlallowsend);
 
 		//create tableprefix_mail2list_popaccounts
@@ -303,7 +303,7 @@ echo $id;
 //	}
 	$page .= "</table>";
 	
-	#Mermission Matrix
+	#Permission Matrix
 	$permmatrix = array();
 	$permmatrix['any'] = 1;
 	
@@ -339,11 +339,21 @@ function editwhitelist(){
 	if ($_POST['action'] == "Add user"){
 
 	//Validate first
-		if (validateMail($_POST['email']) && $_POST['name']!=""){
-			Sql_Query("INSERT INTO `" . $GLOBALS[table_prefix]."mail2list_allowsend` (`id` , `email` , `name`) VALUES (NULL, '" . $_POST['email'] . "', '" . $_POST['name'] . "');");
-			$page2 = "User " . $_POST['name'] . " has been added";
-		}else{
-			$page2 = "Addres '" . $_POST['email'] . "' and/or name '" . $_POST['name'] . "' are/is not valid";
+	
+		if($_POST['name']=="")
+		{
+			$page2 = "Name '" . $_POST['name'] . "' is not valid";			
+		}
+		else if(!validateMail($_POST['email']))
+		{
+			$page2 = "Addres '" . $_POST['email'] . "' is not valid";
+		}
+		else if($_POST['aliasemail']!="" && !validateMail($_POST['aliasemail']))
+		{
+			$page2 = "Alias Addres '" . $_POST['aliasemail'] . "' is not valid";
+		}		
+		else {
+			Sql_Query("INSERT INTO `" . $GLOBALS[table_prefix]."mail2list_allowsend` (`id` , `email` , `name`, aliasemail) VALUES (NULL, '" . sql_escape($_POST['email']) . "', '" . sql_escape($_POST['name']) . "', '" . sql_escape($_POST['aliasemail']) . "');");
 		}
 	}
 
@@ -366,6 +376,7 @@ function editwhitelist(){
 	$page .= "<form method='post'>";
 	$page .= "Name: <input type=text name='name'><br /><br />";
 	$page .= "Email: <input type=text name='email'><br /><br />";
+	$page .= "Alias From Email: <input type=text name='aliasemail'><br /><br />";	
 	$page .= "<input type=submit name='action' value='Add user'><br /><br />";
 	$page .= "<input type=submit name='action' value='Import users'>";
 	$page .= "</form>";
@@ -378,6 +389,19 @@ function editwhitelist(){
 	  $page3 .= " <option value=" . $row["id"] . ">" . $row["name"] . " " . $row["email"] . "</option>";
     }
 	$page3 .= "</select><br /><br /><input type=submit name='action' value='Delete user'></form>";
+
+	$req = Sql_Query(sprintf('select * from ' . $GLOBALS[table_prefix].'mail2list_allowsend'));
+	$page3 .= "<hr><br><table width='100%'>";
+	$page3 .= "<tr><td>Name</td><td>E-Mail</td><td>Alias E-Mail</td></tr>";
+	while ($row = Sql_Fetch_Array($req)) {
+		$page3 .= "<tr><td>". htmlspecialchars($row["name"]) ."</td><td>". htmlspecialchars($row["email"]) ."</td><td>". htmlspecialchars($row["aliasemail"]) ."</td>";
+		$page3 .= "<td><form method='post'>";
+		$page3 .= "<input type='hidden' name='userid' value='". htmlspecialchars($row["id"]) ."' />";    
+		$page3 .= "<input type=submit name='action' value='Delete user'></form>";	
+		$page3 .= "</td>";
+		$page3 .= "</tr>";		
+	}
+	$page3 .= "</table>";
 
 
 	print($page . $page2 . $page3 . $page4);

@@ -718,6 +718,14 @@
 					#Get store dir
 					$dir = $this->dir_name();
 					
+					#Set From Alias
+					//$email['FROM_NAME']  = $this->mimie_text_decode_nohtml($fromname);
+					if($whitelistcheck['aliasemail'] != "")
+					{
+						$email['FROM_EMAIL'] = strtolower($whitelistcheck['aliasemail']);
+					}
+					
+					
 					#Insert message to db
 					$ismsgdb = $this->db_add_message($email, $phplist_template, $phplist_listowner, $phplist_listid);
 					
