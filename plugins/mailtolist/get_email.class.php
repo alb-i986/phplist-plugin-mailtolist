@@ -26,8 +26,13 @@
 		###################################################################################################################
 		###################################################################################################################
 		##     Edit the URL to your phplist attachment directory (http://www.yourdomain.com/mailinglist/attachments/)    ##
+		##     It is not safe to use place attachments directly under web server.										 ##
+		##     Instead we will use a script similer to dl.php used in phplist.											 ##
+		##	   Infact dl_mailtolist.php is a copy of dl.php with some minor changes.                                     ##
+		##     Ideally dl_mailtolist.php must be placed in the same place as dl.php                                      ##
+		##     Please read the comments in dl_mailtolist.php                                                             ##
 		###################################################################################################################
-		 var $attach_url = "http://www.yourdomain.com/mailinglist/attachments/";
+		 var $attach_url = "http://www.yourdomain.com/mailinglist/dl_mailtolist.php";
 		###################################################################################################################
 		##	   Edit the path to your phplist attachment directory (/var/www/mailinglist/attachments/)                    ##
 		###################################################################################################################
@@ -180,6 +185,10 @@
 		*/
 		function parsepart($p,$msgid,$i){
 			$part=imap_fetchbody($this->link,$msgid,$i);
+
+			$this->partsarray[$i]['ifid'] = $p->ifid;
+			$this->partsarray[$i]['id'] = $p->id;
+
 			#Multipart
 		   
 			if ($p->type!=0){
@@ -357,8 +366,8 @@
 				}//[end if]
 		
 				$email['CHARSET']    = $charset;
-				$email['SUBJECT']    = $this->mimie_text_decode($header->Subject);
-				$email['FROM_NAME']  = $this->mimie_text_decode($fromname);
+				$email['SUBJECT']    = $this->mimie_text_decode_nohtml($header->Subject);
+				$email['FROM_NAME']  = $this->mimie_text_decode_nohtml($fromname);
 				$email['FROM_EMAIL'] = $fromaddress;
 				$email['TO_EMAIL']   = $toaddress;
 				$email['DATE']       = date("Y-m-d H:i:s",strtotime($header->date));
@@ -384,6 +393,28 @@
 		
 		  }//[end function]
 		
+		function mimie_text_decode_nohtml($string){
+		
+			$string = chop($string);
+		
+			$elements = imap_mime_header_decode($string);
+			if(is_array($elements)){
+				for ($i=0; $i<count($elements); $i++) {
+					$charset = $elements[$i]->charset;
+					$txt .= $elements[$i]->text;
+				}//[end for]
+			} else {
+				$txt = $string;
+			}//[end if]
+			if($txt == ''){
+				$txt = 'No_name';
+			}//[end if]
+			if($charset == 'us-ascii'){
+				//$txt = $this->charset_decode_us_ascii ($txt);
+			}//[end if]
+			return $txt;
+		}//[end function]
+        
 		function mimie_text_decode($string){
 		
 			$string = htmlspecialchars(chop($string));
@@ -475,16 +506,16 @@
 			}//[end if]
 			
 			$sql = "INSERT INTO "  . $GLOBALS['table_prefix'] . "message (subject, fromfield, footer, entered, embargo, status,htmlformatted, sendformat, template, owner) VALUES
-				  ('".addslashes($email['SUBJECT'])."',
-				  '".$email['FROM_NAME'] . " " . $email['FROM_EMAIL']."',
-				  '". htmlentities(getConfig("messagefooter"))."',
-				  '".$email['DATE']."',
-				  '".$email['DATE']."',
-				  '" . $message_state . "',
+				  ('". sql_escape($email['SUBJECT'])."',
+				  '". sql_escape($email['FROM_NAME'] . " " . $email['FROM_EMAIL'])."',
+				  '". sql_escape(getConfig("messagefooter"))."',
+				  '".sql_escape($email['DATE'])."',
+				  '".sql_escape($email['DATE'])."',
+				  '" . sql_escape($message_state) . "',
 				  '1',
-				  '".$this->sendformat."',
-				  '".$phplist_template."',
-				  '".$phplist_listowner."')";
+				  '".sql_escape($this->sendformat)."',
+				  '". sql_escape($phplist_template) ."',
+				  '".sql_escape($phplist_listowner)."')";
 			Sql_Query($sql);
 		
 			$execute = Sql_Query("select LAST_INSERT_ID() as UID");
@@ -493,9 +524,9 @@
 		
 			//add to tableprefix_listmessage
 			$sql = "INSERT INTO "  . $GLOBALS['table_prefix'] . "listmessage (messageid, listid, entered) VALUES
-					('".$this->newid."',
-					'".$phplist_listid."',
-					'".$email['DATE']."')";
+					('".sql_escape($this->newid)."',
+					'".sql_escape($phplist_listid)."',
+					'".sql_escape($email['DATE'])."')";
 			Sql_Query($sql);
 		}//[end function]
 		  
@@ -506,7 +537,7 @@
 		function db_add_attach($file_orig, $filename, $filesize, $filetype){
 			$sql = "INSERT INTO "  . $GLOBALS['table_prefix'] . "attachment (filename, remotefile, size, mimetype) VALUES
 				('".addslashes($filename)."',
-				 '".addslashes($filename)."',
+				 '".addslashes($file_orig)."',
 				 '".$filesize."',
 				 '".$filetype."')";
 			Sql_Query($sql);
@@ -563,13 +594,22 @@
 			}//[end if]
 		}//[end function]
 		
-		function getImageUrl($i){
-			$decoded = $this->partsarray[$i][attachment][filename];
-			$decoded = $this->mimie_text_decode($decoded);
-			$decoded = preg_replace('/[^a-z0-9_\-\.]/i', '_', $decoded);
-			$decoded = $this->attach_url . $this->dir_name() . $this->newid . $decoded;
+		function getImageUrl($i,$cid){	
+			foreach($this->partsarray as $t=>$p){	
+				if ($p[id] == "<" . urldecode($cid) . ">")
+				{
+					$decoded = $p[attachment][filename];
+					$decoded = $this->mimie_text_decode($decoded);
+					$decoded = preg_replace('/[^a-z0-9_\-\.]/i', '_', $decoded);
+					#$decoded = $this->attach_url . $this->dir_name() . $this->newid . $decoded;	
+					$decoded = $this->attach_url . "?fid=" . urlencode($this->dir_name() . $this->newid . $decoded);
+					
+					break;
+				}
+			}
 			return $decoded;
 		}//[end function]
+
 		  
 		function check_sendformat($format){
 			switch ($this->sendformat){
@@ -623,7 +663,7 @@
 		  //begin processing
 		  $bad_messages = 0;
 		  while($this->msgid <= $this->num_message()) {
-		
+				$this->partsarray = array();
 				$email = $this->email_get();
 				$mail_status_inprocess = $this->msgid;
 				$mail_status_total = $this->num_message();
@@ -631,7 +671,22 @@
 				//First we have to check some things (whitelist, mailinglist,...)
 				$req = Sql_Query("SELECT * FROM "  . $GLOBALS['table_prefix'] . "mail2list_allowsend WHERE email='".$email['FROM_EMAIL']."'");
 				$whitelistcheck = Sql_Fetch_Array($req);
-				if ($whitelistcheck['name'] == ""){
+				
+				//Load sender matrix for the list
+				$sender_matrix = array();
+				$popsql = Sql_Query("SELECT allwedsenders FROM " . $GLOBALS['table_prefix']."mail2list_popaccounts WHERE listid=".$phplist_listid);
+				$poprow = Sql_Fetch_Array($popsql);
+				$sender_allowed = false;
+				if ($poprow['allwedsenders'] != "")
+				{
+					$sender_matrix =  unserialize($poprow['allwedsenders']);
+					if($sender_matrix['any'] || $sender_matrix[strtolower($email['FROM_EMAIL'])])
+					{
+						$sender_allowed = true;
+					}
+				}
+				
+				if ($whitelistcheck['name'] == "" || !$sender_allowed){
 					//user not available, reply with error and delete message
 					$this->processed_message[$this->msgid] .= "Processed message <b>" . $mail_status_inprocess . "</b> of <b>" . $mail_status_total . "</b> with error!<br />";
 					$this->processed_message[$this->msgid]  .= "<br /><b>".$email['FROM_EMAIL']."</b> could not be found on the whitelist!<br />";
@@ -670,6 +725,14 @@
 					#Get store dir
 					$dir = $this->dir_name();
 					
+					#Set From Alias
+					//$email['FROM_NAME']  = $this->mimie_text_decode_nohtml($fromname);
+					if($whitelistcheck['aliasemail'] != "")
+					{
+						$email['FROM_EMAIL'] = strtolower($whitelistcheck['aliasemail']);
+					}
+					
+					
 					#Insert message to db
 					$ismsgdb = $this->db_add_message($email, $phplist_template, $phplist_listowner, $phplist_listid);
 					
@@ -677,10 +740,10 @@
 						if($part['text']['type'] == 'HTML'){
 							$this->check_sendformat("HTML");
 							###################################################
-							preg_match_all('/src\=\"cid\:(.*?)\@.*?\"/i', $part['text']['string'], $cids);
+							preg_match_all('/src\=\"cid\:(.*?)"/i', $part['text']['string'], $cids);
 							$counter = count($cids[0])+2;
 							for ($i = 2; $i<$counter; $i++){
-								$part['text']['string'] = str_replace($cids[0][$i-2], "src='" . $this->getImageUrl($i) . "'", $part['text']['string']);
+								$part['text']['string'] = str_replace($cids[0][$i-2], "src='" . $this->getImageUrl($i,$cids[0][$i-2]) . "'", $part['text']['string']);
 							}//[end for]
 							#####################################################
 							$this->db_update_message($part['text']['string'], $type= 'HTML');

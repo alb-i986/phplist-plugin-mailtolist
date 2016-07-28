@@ -62,11 +62,11 @@ function main(){
 		Sql_Query($sqllist);
 
 		//create tableprefix_mail2list_allowsend
-		$sqlallowsend = "CREATE TABLE `".$GLOBALS[table_prefix]."mail2list_allowsend` (`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,`email` VARCHAR( 255 ) NOT NULL ,`name` VARCHAR( 255 ) NOT NULL ,`sent` INT( 50 ) NOT NULL DEFAULT '0');";
+		$sqlallowsend = "CREATE TABLE `".$GLOBALS[table_prefix]."mail2list_allowsend` (`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,`email` VARCHAR( 255 ) NOT NULL ,`name` VARCHAR( 255 ) NOT NULL ,`sent` INT( 50 ) NOT NULL DEFAULT '0', `aliasemail` VARCHAR( 255 ));";
 		Sql_Query($sqlallowsend);
 
 		//create tableprefix_mail2list_popaccounts
-		$sqlpop = "CREATE TABLE `".$GLOBALS[table_prefix]."mail2list_popaccounts` (`listid` INT( 10 ) NOT NULL PRIMARY KEY, `host` VARCHAR( 255 ) NOT NULL ,`port` VARCHAR( 255 ) NOT NULL ,`login` VARCHAR( 50 ) NOT NULL ,		`pass` VARCHAR( 50 ) NOT NULL, `mail_status` VARCHAR( 10 ) NOT NULL DEFAULT '0/0', `queue` VARCHAR( 3 ) NOT NULL DEFAULT 'yes', `del_message` VARCHAR( 3 ) NOT NULL DEFAULT 'yes' );";
+		$sqlpop = "CREATE TABLE `".$GLOBALS[table_prefix]."mail2list_popaccounts` (`listid` INT( 10 ) NOT NULL PRIMARY KEY, `host` VARCHAR( 255 ) NOT NULL ,`port` VARCHAR( 255 ) NOT NULL ,`login` VARCHAR( 50 ) NOT NULL ,		`pass` VARCHAR( 50 ) NOT NULL, `mail_status` VARCHAR( 10 ) NOT NULL DEFAULT '0/0', `queue` VARCHAR( 3 ) NOT NULL DEFAULT 'yes', `del_message` VARCHAR( 3 ) NOT NULL DEFAULT 'yes', `allowedsenders` TEXT NULL DEFAULT NULL );";
 		Sql_Query($sqlpop);
 
 		$page  = "<h6>Database had to be updated, please reload the page. <br />";
@@ -123,9 +123,9 @@ function process(){
 	$page2 .= "<a href='./?page=processqueue'>Click to process queue</a>";
 
 	$full_page .= $page;
-	//get available lists
+	//get available lists where queue is not disabled
 	$accounts = Sql_Num_Rows($GLOBALS[table_prefix]."mail2list_popaccounts");
-	$sql = Sql_Query("SELECT * FROM ". $GLOBALS[table_prefix]."mail2list_popaccounts");
+	$sql = Sql_Query("SELECT * FROM ". $GLOBALS[table_prefix]."mail2list_popaccounts WHERE queue!='no'");
 	$i = 0;
 	while ($row = Sql_Fetch_Array($sql)) {
 	  $popaccounts[$i] = $row;
@@ -193,6 +193,21 @@ echo $id;
 				}
 			}
 		}
+		
+		//read permissions from user
+		$sender_list = Sql_Query(sprintf('select * from ' . $GLOBALS[table_prefix].'mail2list_allowsend'));
+		$permmatrix = array();
+		if($_POST['sender_id_any'] == 'allow')
+		{
+			$permmatrix['any'] = 1;
+		}		
+		while ($sender = Sql_Fetch_Array($sender_list)) {
+			if($_POST['sender_id_' . $sender['id']] == 'allow')
+			{
+				$permmatrix[strtolower($sender['email'])] = 1;
+			}
+		}
+		$permmatrix_encoded = sql_escape(serialize($permmatrix));		
 
 		if ($count>=1){
 		//email is already in use by another list
@@ -219,12 +234,10 @@ echo $id;
 		
 		if ($row['listid'] == ""){
 			//table doesn't exist
-			Sql_Query("INSERT INTO `" . $GLOBALS[table_prefix]."mail2list_popaccounts` (`host` , `port` , `login` , `pass`, `listid`, `queue`, `del_message` ) VALUES ('" . $_POST['pophost'] . "', '" . $_POST['popport'] . "', '" . $_POST['poplogin'] . "', '" . $_POST['poppass'] . "', '" . $id . "', '" . $_POST['queue'] . "', '" . $_POST['del_message'] . "');");
+			Sql_Query("INSERT INTO `" . $GLOBALS[table_prefix]."mail2list_popaccounts` (`host` , `port` , `login` , `pass`, `listid`, `queue`, `del_message`, allwedsenders ) VALUES ('" . $_POST['pophost'] . "', '" . $_POST['popport'] . "', '" . $_POST['poplogin'] . "', '" . $_POST['poppass'] . "', '" . $id . "', '" . $_POST['queue'] . "', '" . $_POST['del_message'] . "', '" . $permmatrix_encoded . "');"); 			
 		}else{
 			//table exists
-			Sql_Query("UPDATE `" . $GLOBALS[table_prefix]."mail2list_popaccounts` SET `host` = '" . $_POST['pophost'] . "',`port` = '" . $_POST['popport'] . "',`login` = '" . $_POST['poplogin'] . "',`pass` = '" . $_POST['poppass'] . "', `queue`='" . $_POST['queue'] . "', `del_message`='" . $_POST['del_message'] . "' WHERE `" . $GLOBALS[table_prefix]."mail2list_popaccounts`.`listid` =".$id);
-
-
+			Sql_Query("UPDATE `" . $GLOBALS[table_prefix]."mail2list_popaccounts` SET `host` = '" . $_POST['pophost'] . "',`port` = '" . $_POST['popport'] . "',`login` = '" . $_POST['poplogin'] . "',`pass` = '" . $_POST['poppass'] . "', `queue`='" . $_POST['queue'] . "', `del_message`='" . $_POST['del_message']. "', `allwedsenders`='" . $permmatrix_encoded . "' WHERE `" . $GLOBALS[table_prefix]."mail2list_popaccounts`.`listid` =".$id);
 		}
 
 		$page2 = "<h6 style='color:red'>Settings have been saved</h6>";
@@ -289,6 +302,24 @@ echo $id;
 //		$page .= "<option value='no'>No</option></td></tr>";
 //	}
 	$page .= "</table>";
+	
+	#Permission Matrix
+	$permmatrix = array();
+	$permmatrix['any'] = 1;
+	
+	if($poprow['allwedsenders'] != "")
+	{
+		$permmatrix =  unserialize($poprow['allwedsenders']);
+	}	
+	$page .= "<hr><br>Sending Permissions<br>";
+
+	$page .= "<input type='checkbox' name='sender_id_any' value='allow'". (($permmatrix['any'])?"checked":"") .">Allow anyone in whitelist to send.(Not Recomended)<br>";
+	$sender_list = Sql_Query(sprintf('select * from ' . $GLOBALS[table_prefix].'mail2list_allowsend'));
+    while ($sender = Sql_Fetch_Array($sender_list)) {
+	  $page .= "<input type='checkbox' name='sender_id_". $sender["id"] ."' value='allow' ". (($permmatrix[strtolower($sender["email"])])?"checked":"") ."> " . htmlspecialchars($sender["email"]) . "<br>";
+    }
+	
+	
 	$page .= "<input type=hidden name='list' value='" . $id . "'><br /><br />";
 	$page .= "<input type=submit name='action' value='Apply settings'><br /><br />";
 	$page .= "<input type=submit name='action' value='Delete settings'>";
@@ -308,11 +339,21 @@ function editwhitelist(){
 	if ($_POST['action'] == "Add user"){
 
 	//Validate first
-		if (validateMail($_POST['email']) && $_POST['name']!=""){
-			Sql_Query("INSERT INTO `" . $GLOBALS[table_prefix]."mail2list_allowsend` (`id` , `email` , `name`) VALUES (NULL, '" . $_POST['email'] . "', '" . $_POST['name'] . "');");
-			$page2 = "User " . $_POST['name'] . " has been added";
-		}else{
-			$page2 = "Addres '" . $_POST['email'] . "' and/or name '" . $_POST['name'] . "' are/is not valid";
+	
+		if($_POST['name']=="")
+		{
+			$page2 = "Name '" . $_POST['name'] . "' is not valid";			
+		}
+		else if(!validateMail($_POST['email']))
+		{
+			$page2 = "Addres '" . $_POST['email'] . "' is not valid";
+		}
+		else if($_POST['aliasemail']!="" && !validateMail($_POST['aliasemail']))
+		{
+			$page2 = "Alias Addres '" . $_POST['aliasemail'] . "' is not valid";
+		}		
+		else {
+			Sql_Query("INSERT INTO `" . $GLOBALS[table_prefix]."mail2list_allowsend` (`id` , `email` , `name`, aliasemail) VALUES (NULL, '" . sql_escape($_POST['email']) . "', '" . sql_escape($_POST['name']) . "', '" . sql_escape($_POST['aliasemail']) . "');");
 		}
 	}
 
@@ -335,6 +376,7 @@ function editwhitelist(){
 	$page .= "<form method='post'>";
 	$page .= "Name: <input type=text name='name'><br /><br />";
 	$page .= "Email: <input type=text name='email'><br /><br />";
+	$page .= "Alias From Email: <input type=text name='aliasemail'><br /><br />";	
 	$page .= "<input type=submit name='action' value='Add user'><br /><br />";
 	$page .= "<input type=submit name='action' value='Import users'>";
 	$page .= "</form>";
@@ -347,6 +389,19 @@ function editwhitelist(){
 	  $page3 .= " <option value=" . $row["id"] . ">" . $row["name"] . " " . $row["email"] . "</option>";
     }
 	$page3 .= "</select><br /><br /><input type=submit name='action' value='Delete user'></form>";
+
+	$req = Sql_Query(sprintf('select * from ' . $GLOBALS[table_prefix].'mail2list_allowsend'));
+	$page3 .= "<hr><br><table width='100%'>";
+	$page3 .= "<tr><td>Name</td><td>E-Mail</td><td>Alias E-Mail</td></tr>";
+	while ($row = Sql_Fetch_Array($req)) {
+		$page3 .= "<tr><td>". htmlspecialchars($row["name"]) ."</td><td>". htmlspecialchars($row["email"]) ."</td><td>". htmlspecialchars($row["aliasemail"]) ."</td>";
+		$page3 .= "<td><form method='post'>";
+		$page3 .= "<input type='hidden' name='userid' value='". htmlspecialchars($row["id"]) ."' />";    
+		$page3 .= "<input type=submit name='action' value='Delete user'></form>";	
+		$page3 .= "</td>";
+		$page3 .= "</tr>";		
+	}
+	$page3 .= "</table>";
 
 
 	print($page . $page2 . $page3 . $page4);
